@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>도박은 게임이 아닙니다</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        body { font-family: 'Pretendard', sans-serif; background-color: #0f172a; color: white; scroll-behavior: smooth; overflow-x: hidden; }
+        .gradient-text { background: linear-gradient(90deg, #f87171, #facc15); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 1.5rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .card:hover { transform: translateY(-10px); border-color: #475569; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+        
+        /* 룰렛 스타일 */
+        #roulette-wrapper { position: relative; width: 300px; height: 300px; margin: 40px auto; }
+        #roulette-wheel {
+            width: 100%; height: 100%; border-radius: 50%; border: 10px solid #334155;
+            position: relative; overflow: hidden;
+            background: conic-gradient(#ffffff 0deg 60deg, #f1f5f9 60deg 120deg, #ffffff 120deg 180deg, #f1f5f9 180deg 240deg, #ffffff 240deg 300deg, #f1f5f9 300deg 360deg);
+            transition: transform 4s cubic-bezier(0.15, 0, 0, 1);
+        }
+        .wheel-text { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 35px; font-weight: 800; color: #1e293b; font-size: 13px; }
+        .pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid #ef4444; z-index: 100; }
+        .center-dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: #ef4444; border: 4px solid white; border-radius: 50%; z-index: 50; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; }
+
+        /* 애니메이션 */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="fixed w-full z-[1000] bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+        <div class="flex justify-between items-center p-5 max-w-7xl mx-auto">
+            <div class="text-2xl font-black gradient-text tracking-tighter italic">CONTROL</div>
+            <div class="flex space-x-6 text-sm font-bold">
+                <a href="#simulator" class="hover:text-red-400 transition">체험</a>
+                <a href="#test" class="hover:text-red-400 transition">진단</a>
+                <a href="#data" class="hover:text-red-400 transition">데이터</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="pt-40 pb-20 text-center px-4">
+        <h1 class="text-6xl md:text-8xl font-black mb-8 italic tracking-tighter">YOU <span class="text-red-500">NEVER</span> WIN</h1>
+        <p class="text-slate-400 text-lg md:text-2xl max-w-3xl mx-auto leading-relaxed">
+            도박 시뮬레이션은 실제 불법 도박 사이트의 알고리즘을 바탕으로 설계되었습니다.<br>
+            <span class="text-white font-bold underline decoration-red-500">결말은 항상 정해져 있습니다.</span>
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 space-y-40 pb-40">
+
+        <section id="simulator" class="scroll-mt-32">
+            <div class="card p-10 md:p-16 max-w-3xl mx-auto bg-slate-800/50 border-red-500/20">
+                <div class="text-center mb-12">
+                    <h2 class="text-sm font-black text-red-500 tracking-[0.3em] uppercase mb-4">Gambling Simulator</h2>
+                    <div id="balance-display" class="text-7xl font-black text-yellow-400 tabular-nums">100,000<span class="text-2xl ml-2">원</span></div>
+                    <div class="inline-block mt-6 px-6 py-2 bg-red-500/10 border border-red-500/50 rounded-full text-red-500 font-bold text-sm">
+                        ⚠️ 1회 참여비: 10,000원 (고정)
+                    </div>
+                </div>
+
+                <div id="intro-screen" class="text-center space-y-6">
+                    <p class="text-slate-400">시뮬레이션을 시작하면 도박의 중독성과 위험성을 체험하게 됩니다.</p>
+                    <button onclick="startSim()" class="w-full bg-red-600 hover:bg-red-700 py-6 rounded-2xl font-black text-2xl transition-all shadow-xl active:scale-95">게임 시작하기</button>
+                </div>
+
+                <div id="select-screen" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button onclick="showGame('rps')" class="p-10 bg-slate-700/50 hover:bg-blue-600 rounded-3xl border border-slate-600 transition-all group text-center">
+                        <i class="fas fa-hand-rock text-5xl mb-4 group-hover:rotate-12 transition"></i>
+                        <div class="font-black text-xl">가위바위보</div>
+                    </button>
+                    <button onclick="showGame('roulette')" class="p-10 bg-slate-700/50 hover:bg-red-600 rounded-3xl border border-slate-600 transition-all group text-center">
+                        <i class="fas fa-spinner text-5xl mb-4 group-hover:animate-spin transition"></i>
+                        <div class="font-black text-xl">룰렛 돌리기</div>
+                    </button>
+                </div>
+
+                <div id="rps-ui" class="hidden text-center space-y-12">
+                    <div class="flex justify-center gap-6">
+                        <button onclick="playRPS('가위')" class="w-24 h-24 bg-white text-slate-900 rounded-full text-4xl hover:scale-110 active:bg-red-100 transition shadow-xl"><i class="fas fa-hand-scissors"></i></button>
+                        <button onclick="playRPS('바위')" class="w-24 h-24 bg-white text-slate-900 rounded-full text-4xl hover:scale-110 active:bg-red-100 transition shadow-xl"><i class="fas fa-hand-rock"></i></button>
+                        <button onclick="playRPS('보')" class="w-24 h-24 bg-white text-slate-900 rounded-full text-4xl hover:scale-110 active:bg-red-100 transition shadow-xl"><i class="fas fa-hand-paper"></i></button>
+                    </div>
+                    <button onclick="goHome()" class="text-slate-500 hover:text-white underline text-sm">뒤로 가기</button>
+                </div>
+
+                <div id="roulette-ui" class="hidden text-center">
+                    <div id="roulette-wrapper">
+                        <div class="pointer"></div>
+                        <div id="roulette-wheel">
+                            <div class="wheel-text" style="transform: rotate(30deg)">-30,000원</div>
+                            <div class="wheel-text" style="transform: rotate(90deg)">-50,000원</div>
+                            <div class="wheel-text" style="transform: rotate(150deg)">+20,000원</div>
+                            <div class="wheel-text" style="transform: rotate(210deg)">-40,000원</div>
+                            <div class="wheel-text" style="transform: rotate(270deg)">-10,000원</div>
+                            <div class="wheel-text" style="transform: rotate(330deg)">+10,000원</div>
+                        </div>
+                        <div onclick="spinWheel()" class="center-dot">SPIN</div>
+                    </div>
+                    <button onclick="goHome()" class="mt-8 text-slate-500 hover:text-white underline text-sm">뒤로 가기</button>
+                </div>
+
+                <div id="status-msg" class="text-center mt-12 text-2xl font-black h-12 italic tracking-tight"></div>
+            </div>
+        </section>
+
+        <section id="test" class="scroll-mt-32">
+            <div class="card p-10 md:p-16 max-w-3xl mx-auto border-blue-500/30">
+                <div id="quiz-ui">
+                    <h2 class="text-3xl font-black text-center mb-2 italic">CAGI 자가진단</h2>
+                    <p class="text-slate-400 text-center text-sm mb-12">지난 3개월간의 행동을 바탕으로 체크해주세요.</p>
+                    <div class="w-full bg-slate-700 h-2 rounded-full mb-12 overflow-hidden">
+                        <div id="pg-bar" class="bg-blue-500 h-full w-0 transition-all"></div>
+                    </div>
+                    <div id="q-area" class="text-center min-h-[300px]">
+                        <h3 id="q-text" class="text-2xl font-bold mb-12 leading-snug"></h3>
+                        <div id="a-btns" class="grid gap-4"></div>
+                    </div>
+                </div>
+                <div id="res-ui" class="hidden text-center py-10">
+                    <h3 class="text-4xl font-black mb-4 gradient-text">검사 결과</h3>
+                    <div id="res-score" class="text-8xl font-black mb-6">0점</div>
+                    <div id="res-grade" class="text-2xl font-bold mb-6 italic underline underline-offset-8"></div>
+                    <p id="res-desc" class="text-slate-400 leading-relaxed mb-12"></p>
+                    <div class="flex flex-col md:flex-row gap-4 justify-center">
+                        <button onclick="location.reload()" class="bg-slate-700 px-8 py-4 rounded-xl font-bold">다시 하기</button>
+                        <a href="tel:1336" class="bg-red-600 px-8 py-4 rounded-xl font-black shadow-lg shadow-red-600/40">☎ 1336 즉시 상담</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="data" class="scroll-mt-32 space-y-16">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black italic underline decoration-red-500 decoration-8 underline-offset-[-5px]">STATISTICS</h2>
+                <p class="text-slate-400 mt-4">청소년 도박 실태 조사 데이터 (단위: %)</p>
+            </div>
+
+            <div class="reveal card p-8 bg-slate-800/50 border-blue-500/20 max-w-5xl mx-auto">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <i class="fas fa-child text-blue-400"></i> 도박을 처음 경험한 나이
+                </h3>
+                <div class="flex flex-wrap gap-4 mb-6 text-sm font-bold">
+                    <span class="bg-slate-700 px-4 py-2 rounded-lg text-slate-300">2024년 평균: 12.9세</span>
+                    <span class="bg-blue-900/50 text-blue-300 px-4 py-2 rounded-lg border border-blue-500/30">2025년 평균: 12.5세</span>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-slate-700">
+                    <table class="w-full text-sm text-center">
+                        <thead class="bg-slate-700/50 text-slate-300 font-bold">
+                            <tr>
+                                <th class="px-6 py-4">연도</th>
+                                <th class="px-6 py-4">9세 이하</th>
+                                <th class="px-6 py-4">10~12세</th>
+                                <th class="px-6 py-4">13~15세</th>
+                                <th class="px-6 py-4">16~18세</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50">
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4 font-bold text-slate-400">2024년</td>
+                                <td class="px-6 py-4">9.6</td>
+                                <td class="px-6 py-4">35.3</td>
+                                <td class="px-6 py-4">34.5</td>
+                                <td class="px-6 py-4">20.6</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition bg-slate-800/30">
+                                <td class="px-6 py-4 font-bold text-blue-400">2025년</td>
+                                <td class="px-6 py-4 text-blue-300">14.0</td>
+                                <td class="px-6 py-4 text-blue-300">33.1</td>
+                                <td class="px-6 py-4 text-blue-300 font-bold">36.7</td>
+                                <td class="px-6 py-4 text-blue-300">16.2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="reveal card p-8 bg-slate-800/50 border-red-500/20 max-w-5xl mx-auto">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <i class="fas fa-question-circle text-red-400"></i> 지난 6개월 도박 지속 이유
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-slate-700">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-700/50 text-slate-300 font-bold text-center">
+                            <tr>
+                                <th class="px-6 py-4 text-left">지속 이유 (중복 응답)</th>
+                                <th class="px-6 py-4 w-32">2024년</th>
+                                <th class="px-6 py-4 w-32">2025년</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50 text-slate-300">
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4 font-bold">돈을 따는 것이 재미있어서</td>
+                                <td class="px-6 py-4 text-center">40.5</td>
+                                <td class="px-6 py-4 text-center font-bold text-red-400">55.4</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">가족/부모와의 친목을 다지기 위해</td>
+                                <td class="px-6 py-4 text-center text-slate-500">-</td>
+                                <td class="px-6 py-4 text-center">16.4</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">새로운 친구를 사귀거나 어울리고 싶어서</td>
+                                <td class="px-6 py-4 text-center">9.3</td>
+                                <td class="px-6 py-4 text-center">13.3</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">스트레스를 풀기 위해서</td>
+                                <td class="px-6 py-4 text-center">12.1</td>
+                                <td class="px-6 py-4 text-center">6.8</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">잃은 돈을 복구하기 위해서</td>
+                                <td class="px-6 py-4 text-center">8.6</td>
+                                <td class="px-6 py-4 text-center">4.6</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">도박 빚을 갚기 위해서 / 따돌림 방지 등</td>
+                                <td class="px-6 py-4 text-center">7.0</td>
+                                <td class="px-6 py-4 text-center">1.7</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="reveal card p-8 bg-slate-800/50 border-yellow-500/20 max-w-5xl mx-auto">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <i class="fas fa-mobile-alt text-yellow-400"></i> 도박 홍보물 주 접촉 매체
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-slate-700">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-700/50 text-slate-300 font-bold text-center">
+                            <tr>
+                                <th class="px-6 py-4 text-left">매체 종류</th>
+                                <th class="px-6 py-4 w-32">2024년</th>
+                                <th class="px-6 py-4 w-32">2025년</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50 text-slate-300">
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4 font-bold">인터넷 배너 광고 및 팝업광고</td>
+                                <td class="px-6 py-4 text-center">34.5</td>
+                                <td class="px-6 py-4 text-center font-bold text-yellow-400">38.7</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">휴대전화 문자메시지</td>
+                                <td class="px-6 py-4 text-center">45.4</td>
+                                <td class="px-6 py-4 text-center">33.6</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">인스타그램/유튜브 등 SNS 게시물</td>
+                                <td class="px-6 py-4 text-center">12.9</td>
+                                <td class="px-6 py-4 text-center">19.3</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">카카오톡/DM 등 메신저</td>
+                                <td class="px-6 py-4 text-center">3.9</td>
+                                <td class="px-6 py-4 text-center">4.6</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">도박사이트 광고 등 음성 전화</td>
+                                <td class="px-6 py-4 text-center">2.8</td>
+                                <td class="px-6 py-4 text-center">2.8</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-950 py-20 text-center border-t border-slate-900">
+        <p class="text-slate-500 text-sm font-bold uppercase tracking-widest mb-4 italic">You are not alone</p>
+        <p class="text-5xl font-black italic mb-8">☎ 1336</p>
+        <p class="text-slate-700 text-xs px-6 leading-loose">
+            본 사이트는 교육용 모의 환경입니다. 실제 도박은 인생을 파괴하는 중범죄입니다.<br>
+            도움이 필요하다면 주저하지 말고 전문가와 상담하십시오.
+        </p>
+    </footer>
+
+    <script>
+        // --- 시뮬레이션 로직 (파산 설계) ---
+        let balance = 100000;
+        let plays = 0;
+        let isMoving = false;
+        let wheelRotation = 0;
+        // 4~7회 안에 파산하도록 목표 설정
+        const targetBankruptcy = Math.floor(Math.random() * 4) + 4; 
+
+        function updateUI() {
+            document.getElementById('balance-display').innerHTML = `${balance.toLocaleString()}<span class="text-2xl ml-2">원</span>`;
+        }
+
+        function startSim() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('select-screen').classList.remove('hidden');
+        }
+
+        function showGame(mode) {
+            document.getElementById('select-screen').classList.add('hidden');
+            document.getElementById(mode + '-ui').classList.remove('hidden');
+        }
+
+        function goHome() {
+            document.getElementById('rps-ui').classList.add('hidden');
+            document.getElementById('roulette-ui').classList.add('hidden');
+            document.getElementById('select-screen').classList.remove('hidden');
+            document.getElementById('status-msg').innerText = "";
+        }
+
+        // --- 알고리즘: 강제 파산 설계 ---
+        function getOutcome() {
+            plays++;
+            let change = 0;
+            let resultIdx = 0;
+
+            if (plays >= targetBankruptcy) {
+                change = -balance; // 마지막엔 전액 몰수
+                resultIdx = 1; // -50,000원 칸 근처
+            } else if (plays === 1) {
+                change = 10000; // 첫 판은 미끼 (따게 해줌)
+                resultIdx = 5; 
+            } else {
+                change = -30000; // 중간에 크게 잃음
+                resultIdx = 0;
+            }
+            return { val: change, idx: resultIdx };
+        }
+
+        // 가위바위보
+        function playRPS(p) {
+            if (balance < 10000) return;
+            balance -= 10000; // 참여비
+            const res = getOutcome();
+            balance += res.val;
+            
+            const msg = document.getElementById('status-msg');
+            msg.innerText = res.val > 0 ? `승리! +${res.val.toLocaleString()}원` : `패배... ${Math.abs(res.val).toLocaleString()}원 손실`;
+            msg.className = `text-center mt-12 text-2xl font-black h-12 ${res.val > 0 ? 'text-green-400' : 'text-red-500'}`;
+            
+            updateUI();
+            checkBankrupt();
+        }
+
+        // 룰렛
+        function spinWheel() {
+            if (isMoving || balance < 10000) return;
+            isMoving = true;
+            balance -= 10000; // 참여비
+            updateUI();
+
+            const res = getOutcome();
+            const angles = [330, 270, 210, 150, 90, 30]; // 각 텍스트 위치 각도
+            const spin = (360 * 5) + angles[res.idx];
+            wheelRotation += spin;
+
+            document.getElementById('roulette-wheel').style.transform = `rotate(${wheelRotation}deg)`;
+            const msg = document.getElementById('status-msg');
+            msg.innerText = "조작 중...";
+            msg.className = "text-center mt-12 text-2xl font-black h-12 text-blue-400";
+
+            setTimeout(() => {
+                isMoving = false;
+                balance += res.val;
+                msg.innerText = res.val > 0 ? `당첨! +${res.val.toLocaleString()}원` : `꽝! ${Math.abs(res.val).toLocaleString()}원 손실`;
+                msg.className = `text-center mt-12 text-2xl font-black h-12 ${res.val > 0 ? 'text-green-400' : 'text-red-500'}`;
+                updateUI();
+                checkBankrupt();
+            }, 4000);
+        }
+
+        function checkBankrupt() {
+            if (balance <= 0) {
+                balance = 0; updateUI();
+                setTimeout(() => {
+                    alert("당신은 파산했습니다. 도박은 무조건 잃도록 설계되어 있습니다. 진단 테스트로 이동합니다.");
+                    window.location.href = "#test";
+                }, 1000);
+            }
+        }
+
+        // --- CAGI 진단 로직 (0~3점 배점) ---
+        const questions = [
+            { q: "돈내기 게임 때문에 단체활동이나 연습에 빠진 적이 있나요?", t: "s" },
+            { q: "친구들과 어울리느라 다른 친구와의 약속을 어긴 적이 있나요?", t: "s" },
+            { q: "돈내기 게임을 위해 계획을 세운 적이 있나요?", t: "s" },
+            { q: "돈내기 게임 때문에 기분이 나빴던 적이 있나요?", t: "s" },
+            { q: "전에 잃은 돈을 되찾기 위해 다시 게임을 한 적이 있나요?", t: "s" },
+            { q: "게임하는 것을 가족이나 선생님에게 숨긴 적이 있나요?", t: "s" },
+            { q: "도박으로 인해 내게 문제가 생겼다고 느낀 적이 있나요?", t: "s" },
+            { q: "용돈(식비 등)을 돈내기 게임에 쓴 적이 있나요?", t: "x" },
+            { q: "게임 자금을 위해 돈이나 물건을 몰래 가져온 적이 있나요?", t: "x" }
+        ];
+        let qIdx = 0, totalScore = 0;
+
+        function updateQuiz() {
+            const q = questions[qIdx];
+            document.getElementById('q-text').innerText = q.q;
+            document.getElementById('pg-bar').style.width = `${(qIdx / questions.length) * 100}%`;
+            
+            const btns = document.getElementById('a-btns');
+            btns.innerHTML = '';
+            const labels = q.t === 's' ? ["없음 (0점)", "가끔 (1점)", "자주 (2점)", "거의 항상 (3점)"] : ["없음 (0점)", "1~3회 (1점)", "4~6회 (2점)", "7회 이상 (3점)"];
+            
+            labels.forEach((l, i) => {
+                const b = document.createElement('button');
+                b.className = "p-5 bg-slate-700/50 hover:bg-blue-600 rounded-2xl text-left font-bold transition border border-slate-600";
+                b.innerText = l;
+                b.onclick = () => { totalScore += i; qIdx++; if(qIdx < questions.length) updateQuiz(); else showResult(); };
+                btns.appendChild(b);
+            });
+        }
+
+        function showResult() {
+            document.getElementById('quiz-ui').classList.add('hidden');
+            const res = document.getElementById('res-ui');
+            res.classList.remove('hidden');
+            document.getElementById('res-score').innerText = totalScore + "점";
+            
+            const g = document.getElementById('res-grade');
+            const d = document.getElementById('res-desc');
+            if (totalScore >= 6) { g.innerText = "🚨 중증 위험 수준"; d.innerText = "조절 능력을 완전히 상실한 상태입니다. 지금 즉시 부모님께 알리고 1336 센터의 전문적인 도움을 받아야 합니다."; }
+            else if (totalScore >= 2) { g.innerText = "🟡 도박 문제 주의 수준"; d.innerText = "도박이 일상에 영향을 미치기 시작했습니다. 더 큰 불행이 닥치기 전에 지금 당장 중단하십시오."; }
+            else { g.innerText = "✅ 안전 수준"; d.innerText = "현재는 문제가 없으나 도박의 미끼 수법에 빠지지 않도록 항상 경계하십시오."; }
+        }
+
+        // 스크롤 시 시각 자료 서서히 등장 (Reveal 효과)
+        function reveal() {
+            const reveals = document.querySelectorAll(".reveal");
+            reveals.forEach(el => {
+                const windowHeight = window.innerHeight;
+                const elementTop = el.getBoundingClientRect().top;
+                if (elementTop < windowHeight - 100) el.classList.add("active");
+            });
+        }
+
+        window.addEventListener("scroll", reveal);
+        updateQuiz();
+        updateUI();
+    </script>
+</body>
+</html>
